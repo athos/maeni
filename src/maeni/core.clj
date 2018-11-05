@@ -48,7 +48,7 @@
     (if (= (:mode vm) :compile)
       (if (:immediate w)
         ((:compiled-code w) vm)
-        (update vm :code conj (:code w)))
+        (update vm :code conj (:code (meta w))))
       (if (number? w)
         (update vm :dstack conj w)
         ((:compiled-code w) vm)))
@@ -64,18 +64,15 @@
   ([vm text]
    (run (assoc vm :text text))))
 
-(defmacro defword [name maybe-attrs & body]
-  (let [{:keys [immediate] :as attrs} (if (map? maybe-attrs)
-                                        maybe-attrs
-                                        {})
-        body (if (map? maybe-attrs)
-               body
-               (cons maybe-attrs body))]
-    `(let [w# (array-map :name ~(str name)
-                         :code '(do ~@body)
-                         :compiled-code (fn [~'&vm] ~@body)
-                         ~@(when immediate
-                             [:immediate true]))]
+(defmacro defword [name & body]
+  (let [name (str/upper-case (str name))
+        {:keys [immediate compile] :as attrs} (meta &form)]
+    `(let [w# (with-meta
+                (array-map :name ~name
+                           :compiled-code (fn [~'&vm] ~@body)
+                           ~@(when immediate
+                               [:immediate true]))
+                {:code '(do ~@body)})]
        (swap! default-dict add-word w#)
        '~name)))
 
@@ -159,11 +156,13 @@
   (let [[_ text] (read-until \) true (:text &vm))]
     (assoc &vm :text text)))
 
-(defword ":" {:immediate true}
+^:immediate
+(defword ":"
   (let [[token text] (next-token (:text &vm))]
     (assoc &vm :current-word token :mode :compile :code [] :text text)))
 
-(defword ";" {:immediate true}
+^:immediate
+(defword ";"
   (let [code (:code &vm)
         word {:name (:current-word &vm)
               :compiled-code (eval `(fn [vm#] (as-> vm# ~'&vm ~@(seq code))))}]
