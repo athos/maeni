@@ -16,7 +16,7 @@
         {:keys [immediate compile] :as attrs} (meta &form)]
     `(let [w# (with-meta
                 (array-map :name ~name
-                           :compiled-code (fn [~'&vm] ~@body)
+                           :compiled-code (fn [~'&dstack] ~@body)
                            ~@(when immediate
                                [:immediate true])
                            ~@(when compile
@@ -26,31 +26,26 @@
        '~name)))
 
 (defword .
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)]
+  (let [x (maeni.stack/pop! &dstack)]
     (print x)))
 
 (defword +
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (+ y x))))
 
 (defword -
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (- y x))))
 
 (defword *
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (* y x))))
 
 (defword /
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (quot y x))))
 
@@ -58,63 +53,53 @@
   (if b 1 0))
 
 (defword =
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (= y x)))))
 
 (defword "~"
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (not= y x)))))
 
 (defword <
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (< y x)))))
 
 (defword >
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (> y x)))))
 
 (defword and
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (and (not (zero? y)) (not (zero? x)))))))
 
 (defword or
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (bool->int (or (not (zero? y)) (not (zero? x)))))))
 
 (defword dup
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/peek &dstack)]
+  (let [x (maeni.stack/peek &dstack)]
     (maeni.stack/push! &dstack x)))
 
 (defword swap
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack x)
     (maeni.stack/push! &dstack y)))
 
 (defword over
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/peek &dstack)]
     (maeni.stack/push! &dstack x)
     (maeni.stack/push! &dstack y)))
 
 (defword rot
-  (let [&dstack (:dstack @vm/*vm*)
-        x (maeni.stack/pop! &dstack)
+  (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)
         z (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack y)
@@ -122,7 +107,7 @@
     (maeni.stack/push! &dstack z)))
 
 (defword drop
-  (maeni.stack/pop! (:dstack @vm/*vm*)))
+  (maeni.stack/pop! &dstack))
 
 (defn- with-next-string [f]
   (let [[s text] (reader/read-string (:text @vm/*vm*))]
@@ -133,11 +118,10 @@
              (with-next-string
                (fn [s]
                  (swap! vm/*vm* update :code conj
-                        `(maeni.stack/push! (:dstack @vm/*vm*) ~s)))))}
+                        `(maeni.stack/push! ~'&dstack ~s)))))}
 (defword "s\""
   (with-next-string
-    (fn [s]
-      (maeni.stack/push! (:dstack @vm/*vm*) s))))
+    #(maeni.stack/push! &dstack %)))
 
 ^{:compile (fn [vm]
              (with-next-string
@@ -164,7 +148,7 @@
 ^:immediate
 (defword ";"
   (let [code (:code @vm/*vm*)
-        compiled-code `(fn [~'&vm] ~(emit-combined-code code))
+        compiled-code `(fn [~'&dstack] ~(emit-combined-code code))
         word {:name (:current-word @vm/*vm*)
               :compiled-code (eval compiled-code)}]
     (swap! vm/*vm* update :dict dict/add-word word)
@@ -186,7 +170,7 @@
   (let [{[c & more] :cstack :keys [code]} @vm/*vm*
         [test then else] (conj c code)
         code `[(do ~(emit-combined-code test)
-                   (if (not (zero? (maeni.stack/pop! (:dstack @vm/*vm*))))
+                   (if (not (zero? (maeni.stack/pop! ~'&dstack)))
                      ~(emit-combined-code then)
                      ~@(when else
                          [(emit-combined-code else)])))]]

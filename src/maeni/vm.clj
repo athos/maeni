@@ -19,17 +19,18 @@
 
 (defn run1 [token]
   (if-let [w (or (dict/find-word (:dict @*vm*) token) (try-coerce token))]
-    (if (= (:mode @*vm*) :compile)
-      (cond (:compile w) ((:compile w) *vm*)
-            (:immediate w) ((:compiled-code w) *vm*)
-            :else
-            (let [code (if (number? w)
-                         `(stack/push! (:dstack @*vm*) ~w)
-                         (:code (meta w)))]
-              (swap! *vm* update :code conj code)))
-      (if (number? w)
-        (stack/push! (:dstack @*vm*) w)
-        ((:compiled-code w) *vm*)))
+    (let [&dstack (:dstack @*vm*)]
+      (if (= (:mode @*vm*) :compile)
+        (cond (:compile w) ((:compile w) &dstack)
+              (:immediate w) ((:compiled-code w) &dstack)
+              :else
+              (let [code (if (number? w)
+                           `(stack/push! ~'&dstack ~w)
+                           (:code (meta w)))]
+                (swap! *vm* update :code conj code)))
+        (if (number? w)
+          (stack/push! &dstack w)
+          ((:compiled-code w) &dstack))))
     (throw (ex-info (str "No such word: " token) {:token token}))))
 
 (defn run [vm]
