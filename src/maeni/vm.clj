@@ -34,11 +34,11 @@
     (throw (ex-info (str "No such word: " token) {:token token}))))
 
 (defn run [vm]
-  (binding [*vm* (atom vm)]
+  (binding [*vm* vm]
     (loop []
       (let [text (:text @*vm*)]
         (if (empty? text)
-          @*vm*
+          *vm*
           (let [[token cs] (reader/next-token text)]
             (swap! *vm* assoc :text cs)
             (run1 token)

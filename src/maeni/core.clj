@@ -6,9 +6,11 @@
   ([] (make-vm nil))
   ([text] (make-vm (builtins/builtin-words) text))
   ([init-dict text]
-   (vm/make-vm init-dict text)))
+   (atom (vm/make-vm init-dict text))))
 
 (defn run
   ([text] (run (make-vm) text))
   ([vm text]
-   (vm/run (assoc vm :text text))))
+   (swap! vm assoc :text text)
+   (vm/run vm)
+   (into [] (:dstack @vm))))
