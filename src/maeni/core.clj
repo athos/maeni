@@ -94,3 +94,15 @@
 (defword /
   (let [{[x y & more] :dstack} &vm]
     (assoc &vm :dstack (cons (quot y x) more))))
+
+(defword dup
+  (let [{[x & more] :dstack} &vm]
+    (assoc &vm :dstack (list* x x more))))
+
+(defword over
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (list* y x y more))))
+
+(defword rot
+  (let [{[x y z & more] :dstack} &vm]
+    (assoc &vm :dstack (list* z x y more))))
