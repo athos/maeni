@@ -152,6 +152,7 @@
     (print s)
     (assoc &vm :text text)))
 
+^:immediate
 (defword "("
   (let [[_ text] (read-until \) true (:text &vm))]
     (assoc &vm :text text)))
