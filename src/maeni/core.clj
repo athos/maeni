@@ -145,14 +145,27 @@
 (defword drop
   (update &vm :dstack rest))
 
-(defword "s\""
-  (let [[s text] (read-string (:text &vm))]
-    (assoc &vm :dstack s :text text)))
+(defn- with-next-string [vm f]
+  (let [[s text] (read-string (:text vm))]
+    (assoc (f s) :text text)))
 
+^{:compile (fn [vm]
+             (with-next-string vm
+               (fn [s]
+                 (update vm :code conj `(update ~'&vm :dstack conj ~s)))))}
+(defword "s\""
+  (with-next-string &vm
+    #(assoc &vm :dstack %)))
+
+^{:compile (fn [vm]
+             (with-next-string vm
+               (fn [s]
+                 (update vm :code conj `(do (print ~s) ~'&vm)))))}
 (defword ".\""
-  (let [[s text] (read-string (:text &vm))]
-    (print s)
-    (assoc &vm :text text)))
+  (with-next-string &vm
+    (fn [s]
+      (print s)
+      &vm)))
 
 ^:immediate
 (defword "("
