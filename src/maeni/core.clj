@@ -49,7 +49,11 @@
     (if (= (:mode vm) :compile)
       (cond (:compile w) ((:compile w) vm)
             (:immediate w) ((:compiled-code w) vm)
-            :else (update vm :code conj (:code (meta w))))
+            :else
+            (let [code (if (number? w)
+                         `(update ~'&vm :dstack conj ~w)
+                         (:code (meta w)))]
+              (update vm :code conj code)))
       (if (number? w)
         (update vm :dstack conj w)
         ((:compiled-code w) vm)))
