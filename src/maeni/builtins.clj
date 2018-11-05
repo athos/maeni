@@ -2,8 +2,7 @@
   (:require [clojure.string :as str]
             [maeni.dict :as dict]
             [maeni.reader :as reader]
-            [maeni.stack]
-            [maeni.vm]
+            [maeni.stack :as s]
             [maeni.vm :as vm]))
 
 (def ^:private builtin-words* (atom {}))
@@ -118,10 +117,10 @@
              (with-next-string
                (fn [s]
                  (swap! vm/*vm* update :code conj
-                        `(maeni.stack/push! ~'&dstack ~s)))))}
+                        `(s/push! ~'&dstack ~s)))))}
 (defword "s\""
   (with-next-string
-    #(maeni.stack/push! &dstack %)))
+    #(s/push! &dstack %)))
 
 ^{:compile (fn [vm]
              (with-next-string
@@ -170,7 +169,7 @@
   (let [{[c & more] :cstack :keys [code]} @vm/*vm*
         [test then else] (conj c code)
         code `[(do ~(emit-combined-code test)
-                   (if (not (zero? (maeni.stack/pop! ~'&dstack)))
+                   (if (not (zero? (s/pop! ~'&dstack)))
                      ~(emit-combined-code then)
                      ~@(when else
                          [(emit-combined-code else)])))]]
