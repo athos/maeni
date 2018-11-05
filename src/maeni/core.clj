@@ -16,10 +16,10 @@
   (let [[ccc text'] (read-until \" true text)]
     [(apply str ccc) text']))
 
-(defn next-word [cs]
-  (let [[word cs'] (->> (drop-while #{\space} cs)
+(defn next-token [cs]
+  (let [[token cs'] (->> (drop-while #{\space} cs)
                         (read-until \space false))]
-    [(apply str word) cs']))
+    [(apply str token) cs']))
 
 (def default-dict (atom {}))
 
@@ -32,19 +32,19 @@
     :dict init-dict
     :text text}))
 
-(defn find-word [dict w]
-  (first (get dict w)))
+(defn find-word [dict token]
+  (first (get dict token)))
 
 (defn add-word [dict w]
   (update dict (:name w) conj w))
 
-(defn- try-coerce [word]
+(defn- try-coerce [token]
   (try
-    (Long/parseLong word)
+    (Long/parseLong token)
     (catch Throwable t nil)))
 
-(defn run1 [vm word]
-  (if-let [w (or (find-word (:dict vm) word) (try-coerce word))]
+(defn run1 [vm token]
+  (if-let [w (or (find-word (:dict vm) token) (try-coerce token))]
     (if (= (:mode vm) :compile)
       (if (:immediate w)
         ((:compiled-code w) vm)
@@ -52,15 +52,15 @@
       (if (number? w)
         (update vm :dstack conj w)
         ((:compiled-code w) vm)))
-    (throw (ex-info (str "No such word: " word) {:word word}))))
+    (throw (ex-info (str "No such word: " token) {:token token}))))
 
 (defn run
   ([vm]
    (loop [{:keys [text] :as vm} vm]
      (if (empty? text)
        vm
-       (let [[word cs] (next-word text)]
-         (recur (run1 (assoc vm :text cs) word))))))
+       (let [[token cs] (next-token text)]
+         (recur (run1 (assoc vm :text cs) token))))))
   ([vm text]
    (run (assoc vm :text text))))
 
@@ -121,8 +121,8 @@
     (assoc &vm :text text)))
 
 (defword ":" {:immediate true}
-  (let [[w text] (next-word (:text &vm))]
-    (assoc &vm :current-word w :mode :compile :code [] :text text)))
+  (let [[token text] (next-token (:text &vm))]
+    (assoc &vm :current-word token :mode :compile :code [] :text text)))
 
 (defword ";" {:immediate true}
   (let [code (:code &vm)
