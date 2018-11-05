@@ -79,6 +79,11 @@
        (swap! default-dict add-word w#)
        '~name)))
 
+(defword .
+  (let [{[x & more] :dstack} &vm]
+    (print x)
+    (assoc &vm :dstack more)))
+
 (defword +
   (let [{[x y & more] :dstack} &vm]
     (assoc &vm :dstack (cons (+ y x) more))))
@@ -95,9 +100,40 @@
   (let [{[x y & more] :dstack} &vm]
     (assoc &vm :dstack (cons (quot y x) more))))
 
+(defn- bool->int [b]
+  (if b 1 0))
+
+(defword =
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (= y x)) more))))
+
+(defword "~"
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (not= y x)) more))))
+
+(defword <
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (< y x)) more))))
+
+(defword >
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (> y x)) more))))
+
+(defword and
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (and (not (zero? y)) (not (zero? x)))) more))))
+
+(defword or
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (cons (bool->int (or (not (zero? y)) (not (zero? x)))) more))))
+
 (defword dup
   (let [{[x & more] :dstack} &vm]
     (assoc &vm :dstack (list* x x more))))
+
+(defword swap
+  (let [{[x y & more] :dstack} &vm]
+    (assoc &vm :dstack (list* y x more))))
 
 (defword over
   (let [{[x y & more] :dstack} &vm]
@@ -106,6 +142,9 @@
 (defword rot
   (let [{[x y z & more] :dstack} &vm]
     (assoc &vm :dstack (list* z x y more))))
+
+(defword drop
+  (update &vm :dstack rest))
 
 (defword "s\""
   (let [[s text] (read-string (:text &vm))]
