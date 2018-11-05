@@ -106,3 +106,16 @@
 (defword rot
   (let [{[x y z & more] :dstack} &vm]
     (assoc &vm :dstack (list* z x y more))))
+
+(defword "s\""
+  (let [[s text] (read-string (:text &vm))]
+    (assoc &vm :dstack s :text text)))
+
+(defword ".\""
+  (let [[s text] (read-string (:text &vm))]
+    (print s)
+    (assoc &vm :text text)))
+
+(defword "("
+  (let [[_ text] (read-until \) true (:text &vm))]
+    (assoc &vm :text text)))
