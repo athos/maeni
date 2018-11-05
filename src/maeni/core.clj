@@ -46,9 +46,9 @@
 (defn run1 [vm token]
   (if-let [w (or (find-word (:dict vm) token) (try-coerce token))]
     (if (= (:mode vm) :compile)
-      (if (:immediate w)
-        ((:compiled-code w) vm)
-        (update vm :code conj (:code (meta w))))
+      (cond (:compile w) ((:compile w) vm)
+            (:immediate w) ((:compiled-code w) vm)
+            :else (update vm :code conj (:code (meta w))))
       (if (number? w)
         (update vm :dstack conj w)
         ((:compiled-code w) vm)))
@@ -71,7 +71,9 @@
                 (array-map :name ~name
                            :compiled-code (fn [~'&vm] ~@body)
                            ~@(when immediate
-                               [:immediate true]))
+                               [:immediate true])
+                           ~@(when compile
+                               [:compile compile]))
                 {:code '(do ~@body)})]
        (swap! default-dict add-word w#)
        '~name)))
