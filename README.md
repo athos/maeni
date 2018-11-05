@@ -1,6 +1,6 @@
 # maeni
 
-A Clojure implementation of Forth programming language
+A toy implementation of the programming language Forth written in Clojure
 
 ## Usage
 
