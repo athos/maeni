@@ -1,14 +1,15 @@
 (ns maeni.core
   (:require [maeni.builtins :as builtins]
             [maeni.dict :as dict]
-            [maeni.reader :as reader]))
+            [maeni.reader :as reader]
+            [maeni.stack :as stack]))
 
 (defn make-vm
   ([] (make-vm nil))
   ([text] (make-vm (builtins/builtin-words) text))
   ([init-dict text]
    {:mode :interpret
-    :dstack ()
+    :dstack (stack/make-stack)
     :cstack ()
     :dict init-dict
     :text text}))
@@ -25,11 +26,12 @@
             (:immediate w) ((:compiled-code w) vm)
             :else
             (let [code (if (number? w)
-                         `(update ~'&vm :dstack conj ~w)
+                         `(do (stack/push! (:dstack ~'&vm) ~w) ~'&vm)
                          (:code (meta w)))]
               (update vm :code conj code)))
       (if (number? w)
-        (update vm :dstack conj w)
+        (do (stack/push! (:dstack vm) w)
+            vm)
         ((:compiled-code w) vm)))
     (throw (ex-info (str "No such word: " token) {:token token}))))
 

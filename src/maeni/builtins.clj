@@ -1,7 +1,8 @@
 (ns maeni.builtins
   (:require [clojure.string :as str]
             [maeni.dict :as dict]
-            [maeni.reader :as reader]))
+            [maeni.reader :as reader]
+            [maeni.stack]))
 
 (def ^:private builtin-words* (atom {}))
 
@@ -23,71 +24,119 @@
        '~name)))
 
 (defword .
-  (let [{[x & more] :dstack} &vm]
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)]
     (print x)
-    (assoc &vm :dstack more)))
+    &vm))
 
 (defword +
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (+ y x) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (+ y x))
+    &vm))
 
 (defword -
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (- y x) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (- y x))
+    &vm))
 
 (defword *
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (* y x) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (* y x))
+    &vm))
 
 (defword /
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (quot y x) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (quot y x))
+    &vm))
 
 (defn- bool->int [b]
   (if b 1 0))
 
 (defword =
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (= y x)) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (= y x)))
+    &vm))
 
 (defword "~"
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (not= y x)) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (not= y x)))
+    &vm))
 
 (defword <
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (< y x)) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (< y x)))
+    &vm))
 
 (defword >
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (> y x)) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (> y x)))
+    &vm))
 
 (defword and
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (and (not (zero? y)) (not (zero? x)))) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (and (not (zero? y)) (not (zero? x)))))
+    &vm))
 
 (defword or
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (cons (bool->int (or (not (zero? y)) (not (zero? x)))) more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (bool->int (or (not (zero? y)) (not (zero? x)))))
+    &vm))
 
 (defword dup
-  (let [{[x & more] :dstack} &vm]
-    (assoc &vm :dstack (list* x x more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/peek &dstack)]
+    (maeni.stack/push! &dstack x)
+    &vm))
 
 (defword swap
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (list* y x more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack x)
+    (maeni.stack/push! &dstack y)
+    &vm))
 
 (defword over
-  (let [{[x y & more] :dstack} &vm]
-    (assoc &vm :dstack (list* y x y more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/peek &dstack)]
+    (maeni.stack/push! &dstack x)
+    (maeni.stack/push! &dstack y)
+    &vm))
 
 (defword rot
-  (let [{[x y z & more] :dstack} &vm]
-    (assoc &vm :dstack (list* z x y more))))
+  (let [&dstack (:dstack &vm)
+        x (maeni.stack/pop! &dstack)
+        y (maeni.stack/pop! &dstack)
+        z (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack y)
+    (maeni.stack/push! &dstack x)
+    (maeni.stack/push! &dstack z)
+    &vm))
 
 (defword drop
-  (update &vm :dstack rest))
+  (maeni.stack/pop! (:dstack &vm))
+  &vm)
 
 (defn- with-next-string [vm f]
   (let [[s text] (reader/read-string (:text vm))]
@@ -96,10 +145,13 @@
 ^{:compile (fn [vm]
              (with-next-string vm
                (fn [s]
-                 (update vm :code conj `(update ~'&vm :dstack conj ~s)))))}
+                 (update vm :code conj
+                         `(do (maeni.stack/push! (:dstack ~'&vm) ~s) ~'&vm)))))}
 (defword "s\""
   (with-next-string &vm
-    #(assoc &vm :dstack %)))
+    (fn [s]
+      (maeni.stack/push! (:dstack &vm) s)
+      &vm)))
 
 ^{:compile (fn [vm]
              (with-next-string vm
@@ -149,9 +201,8 @@
 (defword then
   (let [{[c & more] :cstack :keys [code]} &vm
         [test then else] (conj c code)
-        code `[(let [vm# ~(emit-combined-code test)
-                     v# (first (:dstack vm#))
-                     ~'&vm (update vm# :dstack rest)]
+        code `[(let [~'&vm ~(emit-combined-code test)
+                     v# (maeni.stack/pop! (:dstack ~'&vm))]
                  (if (not (zero? v#))
                    ~(emit-combined-code then)
                    ~@(if else
