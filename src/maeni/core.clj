@@ -119,3 +119,15 @@
 (defword "("
   (let [[_ text] (read-until \) true (:text &vm))]
     (assoc &vm :text text)))
+
+(defword ":" {:immediate true}
+  (let [[w text] (next-word (:text &vm))]
+    (assoc &vm :current-word w :mode :compile :code [] :text text)))
+
+(defword ";" {:immediate true}
+  (let [code (:code &vm)
+        word {:name (:current-word &vm)
+              :compiled-code (eval `(fn [vm#] (as-> vm# ~'&vm ~@(seq code))))}]
+    (-> &vm
+        (update :dict add-word word)
+        (assoc :mode :interpret :current-word nil :code nil))))
