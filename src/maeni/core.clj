@@ -1,5 +1,6 @@
 (ns maeni.core
-  (:refer-clojure :exclude [read-string]))
+  (:refer-clojure :exclude [read-string])
+  (:require [clojure.string :as str]))
 
 (defn read-until [delimiter delimiter-mandatory? cs]
   (loop [cs cs, ret []]
@@ -33,10 +34,10 @@
     :text text}))
 
 (defn find-word [dict token]
-  (first (get dict token)))
+  (first (get dict (str/upper-case token))))
 
 (defn add-word [dict w]
-  (update dict (:name w) conj w))
+  (update dict (str/upper-case (:name w)) conj w))
 
 (defn- try-coerce [token]
   (try
