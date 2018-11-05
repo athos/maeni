@@ -30,6 +30,7 @@
   ([init-dict text]
    {:mode :interpret
     :dstack ()
+    :cstack ()
     :dict init-dict
     :text text}))
 
@@ -182,11 +183,40 @@
   (let [[token text] (next-token (:text &vm))]
     (assoc &vm :current-word token :mode :compile :code [] :text text)))
 
+(defn- emit-combined-code [code]
+  `(as-> ~'&vm ~'&vm ~@(seq code)))
+
 ^:immediate
 (defword ";"
   (let [code (:code &vm)
+        compiled-code `(fn [~'&vm] ~(emit-combined-code code))
         word {:name (:current-word &vm)
-              :compiled-code (eval `(fn [vm#] (as-> vm# ~'&vm ~@(seq code))))}]
+              :compiled-code (eval compiled-code)}]
     (-> &vm
         (update :dict add-word word)
         (assoc :mode :interpret :current-word nil :code nil))))
+
+^:immediate
+(defword if
+  (let [code (:code &vm)]
+    (-> (assoc &vm :code [])
+        (update :cstack conj [code]))))
+
+^:immediate
+(defword else
+  (let [{[c & more] :cstack :keys [code]} &vm]
+    (assoc &vm :code [] :cstack (cons (conj c code) more))))
+
+^:immediate
+(defword then
+  (let [{[c & more] :cstack :keys [code]} &vm
+        [test then else] (conj c code)
+        code `[(let [vm# ~(emit-combined-code test)
+                     v# (first (:dstack vm#))
+                     ~'&vm (update vm# :dstack rest)]
+                 (if (not (zero? v#))
+                   ~(emit-combined-code then)
+                   ~@(if else
+                       [(emit-combined-code else)]
+                       ['&vm])))]]
+    (assoc &vm :code code :cstack more)))
