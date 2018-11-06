@@ -51,38 +51,38 @@
         y (maeni.stack/pop! &dstack)]
     (maeni.stack/push! &dstack (quot y x))))
 
-(defn- bool->int [b]
+(defn bool->int [b]
   (if b 1 0))
 
 (defword =
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (= y x)))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (= y x)))))
 
 (defword "~"
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (not= y x)))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (not= y x)))))
 
 (defword <
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (< y x)))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (< y x)))))
 
 (defword >
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (> y x)))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (> y x)))))
 
 (defword and
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (and (not (zero? y)) (not (zero? x)))))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (and (not (zero? y)) (not (zero? x)))))))
 
 (defword or
   (let [x (maeni.stack/pop! &dstack)
         y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (bool->int (or (not (zero? y)) (not (zero? x)))))))
+    (maeni.stack/push! &dstack (maeni.builtins/bool->int (or (not (zero? y)) (not (zero? x)))))))
 
 (defword dup
   (let [x (maeni.stack/peek &dstack)]
