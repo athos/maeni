@@ -192,3 +192,23 @@
   (let [address (:current-address @vm/*vm*)]
     (swap! vm/*vm* update :code conj
            `(vm/call-compiled-code (:cells @vm/*vm*) ~address ~'&dstack))))
+
+(defn with-next-word [f]
+  (let [[token text] (reader/next-token (:text @vm/*vm*))
+        w (dict/find-word (:dict @vm/*vm*) token)]
+    (f w)
+    (swap! vm/*vm* assoc :text text)))
+
+^{:compile (fn [vm]
+             (with-next-word
+               (fn [w]
+                 (let [code `(s/push! ~'&dstack ~(:address w))]
+                   (swap! vm/*vm* update :code conj code)))))}
+(defword "'"
+  (with-next-word
+    (fn [w]
+      (maeni.stack/push! &dstack (:address w)))))
+
+(defword execute
+  (let [address (maeni.stack/pop! &dstack)]
+    (maeni.vm/call-compiled-code (:cells @vm/*vm*) address &dstack)))
