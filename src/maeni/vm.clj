@@ -25,8 +25,8 @@
                 (assoc-in [:cells address] (:compiled-code word))
                 (update :dict dict/add-word word')))))
 
-(defmacro call-compiled-code [cells address &dstack]
-  `((nth ~cells ~address) ~&dstack))
+(defmacro call-compiled-code [&cells address &dstack]
+  `((nth ~&cells ~address) ~'&cells ~&dstack))
 
 (defn- try-coerce [token]
   (try
@@ -35,22 +35,22 @@
 
 (defn run1 [token]
   (if-let [w (or (dict/find-word (:dict @*vm*) token) (try-coerce token))]
-    (let [cells (:cells @*vm*)
+    (let [&cells (:cells @*vm*)
           &dstack (:dstack @*vm*)]
       (if (= (:mode @*vm*) :compile)
-        (cond (:compile w) ((:compile w) &dstack)
-              (:immediate w) (call-compiled-code cells (:address w) &dstack)
+        (cond (:compile w) ((:compile w) @*vm*)
+              (:immediate w) (call-compiled-code &cells (:address w) &dstack)
               :else
               (let [code (if (number? w)
                            `(stack/push! ~'&dstack ~w)
                            (or (:code (meta w))
-                               `(call-compiled-code (:cells @*vm*)
+                               `(call-compiled-code ~'&cells
                                                     ~(:address w)
                                                     ~'&dstack)))]
                 (swap! *vm* update :code conj code)))
         (if (number? w)
           (stack/push! &dstack w)
-          (call-compiled-code cells (:address w) &dstack))))
+          (call-compiled-code &cells (:address w) &dstack))))
     (throw (ex-info (str "No such word: " token) {:token token}))))
 
 (defn run [vm]

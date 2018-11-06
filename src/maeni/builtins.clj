@@ -20,7 +20,7 @@
         address (vm/allocate-cell! builtin-words*)]
     `(let [w# (with-meta
                 (array-map :name ~name
-                           :compiled-code (fn [~'&dstack] ~@body)
+                           :compiled-code (fn [~'&cells ~'&dstack] ~@body)
                            ~@(when immediate
                                [:immediate true])
                            ~@(when compile
@@ -158,7 +158,7 @@
 ^:immediate
 (defword ";"
   (let [code (:code @vm/*vm*)
-        compiled-code `(fn [~'&dstack] ~(emit-combined-code code))
+        compiled-code `(fn [~'&cells ~'&dstack] ~(emit-combined-code code))
         address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
               :compiled-code (eval compiled-code)}]
@@ -191,7 +191,7 @@
 (defword recurse
   (let [address (:current-address @vm/*vm*)]
     (swap! vm/*vm* update :code conj
-           `(vm/call-compiled-code (:cells @vm/*vm*) ~address ~'&dstack))))
+           `(vm/call-compiled-code ~'&cells ~address ~'&dstack))))
 
 (defn with-next-word [f]
   (let [[token text] (reader/next-token (:text @vm/*vm*))
@@ -211,4 +211,4 @@
 
 (defword execute
   (let [address (maeni.stack/pop! &dstack)]
-    (maeni.vm/call-compiled-code (:cells @vm/*vm*) address &dstack)))
+    (maeni.vm/call-compiled-code &cells address &dstack)))
