@@ -8,14 +8,16 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 
-(def ^:private builtin-words* (atom {}))
+(def ^:private builtin-words*
+  (atom {:dict {}, :cells []}))
 
 (defn builtin-words []
   @builtin-words*)
 
 (defmacro defword [name & body]
   (let [name (str/upper-case (str name))
-        {:keys [immediate compile] :as attrs} (meta &form)]
+        {:keys [immediate compile] :as attrs} (meta &form)
+        address (vm/allocate-cell! builtin-words*)]
     `(let [w# (with-meta
                 (array-map :name ~name
                            :compiled-code (fn [~'&dstack] ~@body)
@@ -24,7 +26,7 @@
                            ~@(when compile
                                [:compile compile]))
                 {:code '(do ~@body)})]
-       (swap! builtin-words* dict/add-word w#)
+       (vm/add-word! builtin-words* ~address w#)
        '~name)))
 
 (defword .
@@ -141,8 +143,14 @@
 
 ^:immediate
 (defword ":"
-  (let [[token text] (reader/next-token (:text @vm/*vm*))]
-    (swap! vm/*vm* assoc :current-word token :mode :compile :code [] :text text)))
+  (let [[token text] (reader/next-token (:text @vm/*vm*))
+        address (vm/allocate-cell! vm/*vm*)]
+    (swap! vm/*vm* assoc
+           :current-address address
+           :current-word token
+           :mode :compile
+           :code []
+           :text text)))
 
 (defn- emit-combined-code [code]
   `(do ~@code))
@@ -151,9 +159,10 @@
 (defword ";"
   (let [code (:code @vm/*vm*)
         compiled-code `(fn [~'&dstack] ~(emit-combined-code code))
+        address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
-              :compiled-code (eval compiled-code)}]
-    (swap! vm/*vm* update :dict dict/add-word word)
+              :compiled-code compiled-code}]
+    (vm/add-word! vm/*vm* address word)
     (swap! vm/*vm* assoc :mode :interpret :current-word nil :code nil)))
 
 ^:immediate

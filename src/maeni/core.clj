@@ -5,8 +5,8 @@
 (defn make-vm
   ([] (make-vm nil))
   ([text] (make-vm (builtins/builtin-words) text))
-  ([init-dict text]
-   (atom (vm/make-vm init-dict text))))
+  ([init text]
+   (atom (vm/make-vm init text))))
 
 (defn run
   ([text] (run (make-vm) text))

@@ -3,14 +3,30 @@
             [maeni.reader :as reader]
             [maeni.stack :as stack]))
 
-(defn make-vm [init-dict text]
+(defn make-vm [init text]
   {:mode :interpret
    :dstack (stack/make-stack)
    :cstack ()
-   :dict init-dict
+   :dict (:dict init)
+   :cells (:cells init)
    :text text})
 
 (def ^:dynamic *vm*)
+
+(defn allocate-cell! [vm]
+  (dec (count (:cells (swap! vm #(update % :cells conj nil))))))
+
+(defn add-word! [vm address word]
+  (let [word' (-> word
+                  (assoc :address address)
+                  (dissoc :compiled-code))]
+    (swap! vm
+           #(-> %
+                (assoc-in [:cells address] (:compiled-code word))
+                (update :dict dict/add-word word')))))
+
+(defmacro call-compiled-code [cells address &dstack]
+  `((nth ~cells ~address) ~&dstack))
 
 (defn- try-coerce [token]
   (try
@@ -19,18 +35,22 @@
 
 (defn run1 [token]
   (if-let [w (or (dict/find-word (:dict @*vm*) token) (try-coerce token))]
-    (let [&dstack (:dstack @*vm*)]
+    (let [cells (:cells @*vm*)
+          &dstack (:dstack @*vm*)]
       (if (= (:mode @*vm*) :compile)
         (cond (:compile w) ((:compile w) &dstack)
-              (:immediate w) ((:compiled-code w) &dstack)
+              (:immediate w) (call-compiled-code cells (:address w) &dstack)
               :else
               (let [code (if (number? w)
                            `(stack/push! ~'&dstack ~w)
-                           (:code (meta w)))]
+                           (or (:code (meta w))
+                               `(call-compiled-code (:cells @*vm*)
+                                                    ~(:address w)
+                                                    ~'&dstack)))]
                 (swap! *vm* update :code conj code)))
         (if (number? w)
           (stack/push! &dstack w)
-          ((:compiled-code w) &dstack))))
+          (call-compiled-code cells (:address w) &dstack))))
     (throw (ex-info (str "No such word: " token) {:token token}))))
 
 (defn run [vm]
