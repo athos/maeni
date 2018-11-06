@@ -161,7 +161,7 @@
         compiled-code `(fn [~'&dstack] ~(emit-combined-code code))
         address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
-              :compiled-code compiled-code}]
+              :compiled-code (eval compiled-code)}]
     (vm/add-word! vm/*vm* address word)
     (swap! vm/*vm* assoc :mode :interpret :current-word nil :code nil)))
 
