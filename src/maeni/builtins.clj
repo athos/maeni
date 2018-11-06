@@ -186,3 +186,9 @@
                      ~@(when else
                          [(emit-combined-code else)])))]]
     (swap! vm/*vm* assoc :code code :cstack more)))
+
+^:immediate
+(defword recurse
+  (let [address (:current-address @vm/*vm*)]
+    (swap! vm/*vm* update :code conj
+           `(vm/call-compiled-code (:cells @vm/*vm*) ~address ~'&dstack))))
