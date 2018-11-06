@@ -162,6 +162,7 @@
         address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
               :compiled-code (eval compiled-code)}]
+    ;(prn :compiled-code compiled-code)
     (vm/add-word! vm/*vm* address word)
     (swap! vm/*vm* assoc :mode :interpret :current-word nil :code nil)))
 
