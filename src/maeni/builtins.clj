@@ -133,7 +133,7 @@
 
 ^:immediate
 (defword "("
-  (let [[_ text] (reader/read-until \) true (:text @vm/*vm*))]
+  (let [[_ text] (reader/read-until #{\)} true (:text @vm/*vm*))]
     (swap! vm/*vm* assoc :text text)))
 
 ^:immediate
