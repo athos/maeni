@@ -5,6 +5,9 @@
             [maeni.stack :as s]
             [maeni.vm :as vm]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (def ^:private builtin-words* (atom {}))
 
 (defn builtin-words []

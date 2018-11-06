@@ -14,7 +14,7 @@
   `(.push ~(with-tag s) ~e))
 
 (defmacro pop! [s]
-  `(.pop ~(with-tag s)))
+  `(long (.pop ~(with-tag s))))
 
 (defmacro peek [s]
-  `(.peek ~(with-tag s)))
+  `(long (.peek ~(with-tag s))))
