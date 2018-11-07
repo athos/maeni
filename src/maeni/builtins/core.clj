@@ -1,9 +1,9 @@
 (ns maeni.builtins.core
   (:require [clojure.string :as str]
-            [maeni.vm :as vm]
+            [maeni.builtins.util :as util]
             [maeni.reader :as reader]
             [maeni.stack :as s]
-            [maeni.builtins.util :as util]))
+            [maeni.vm :as vm]))
 
 (def builtin-words*
   (atom {:dict {}, :cells []}))
@@ -44,6 +44,13 @@
     ;(prn :compiled-code compiled-code)
     (vm/add-word! vm/*vm* address word)
     (swap! vm/*vm* assoc :mode :interpret :current-word nil :code nil)))
+
+^:immediate
+(defword "["
+  (swap! vm/*vm* assoc :mode :interpret))
+
+(defword "]"
+  (swap! vm/*vm* assoc :mode :compile))
 
 ^:immediate
 (defword "("
