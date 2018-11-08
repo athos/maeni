@@ -40,7 +40,9 @@
         compiled-code `(fn [~'&cells ~'&dstack] ~(util/emit-combined-code code))
         address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
-              :compiled-code (eval compiled-code)}]
+              :compiled-code (binding [*compiler-options* {:disable-locals-clearing true
+                                                           :direct-linking true}]
+                               (eval compiled-code))}]
     ;(prn :compiled-code compiled-code)
     (vm/add-word! vm/*vm* address word)
     (swap! vm/*vm* assoc :mode :interpret :current-word nil :code nil)))
