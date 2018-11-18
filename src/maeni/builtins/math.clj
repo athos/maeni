@@ -6,24 +6,20 @@
 (set! *unchecked-math* :warn-on-boxed)
 
 (defword +
-  (let [x (maeni.stack/pop! &dstack)
-        y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (+ y x))))
+  (let [x (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (+ (maeni.stack/pop! &dstack) x))))
 
 (defword -
-  (let [x (maeni.stack/pop! &dstack)
-        y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (- y x))))
+  (let [x (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (- (maeni.stack/pop! &dstack) x))))
 
 (defword *
-  (let [x (maeni.stack/pop! &dstack)
-        y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (* y x))))
+  (let [x (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (* (maeni.stack/pop! &dstack) x))))
 
 (defword /
-  (let [x (maeni.stack/pop! &dstack)
-        y (maeni.stack/pop! &dstack)]
-    (maeni.stack/push! &dstack (quot y x))))
+  (let [x (maeni.stack/pop! &dstack)]
+    (maeni.stack/push! &dstack (quot (maeni.stack/pop! &dstack) x))))
 
 (defmacro bool->int [b]
   `(if ~b -1 0))
