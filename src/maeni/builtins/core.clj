@@ -14,7 +14,8 @@
         address (vm/allocate-cell! builtin-words*)]
     `(let [w# (with-meta
                 (array-map :name ~name
-                           :compiled-code (fn [~'&cells ~'&dstack] ~@body)
+                           :compiled-code (fn [~'&cells ~(s/with-tag '&dstack)]
+                                            ~@body)
                            ~@(when immediate
                                [:immediate true])
                            ~@(when compile
@@ -37,7 +38,7 @@
 ^:immediate
 (defword ";"
   (let [code (:code @vm/*vm*)
-        compiled-code `(fn [~'&cells ~'&dstack] ~(util/emit-combined-code code))
+        compiled-code `(fn [~'&cells ~(s/with-tag '&dstack)] ~(util/emit-combined-code code))
         address (:current-address @vm/*vm*)
         word {:name (:current-word @vm/*vm*)
               :compiled-code (binding [*compiler-options* {:disable-locals-clearing true

@@ -5,7 +5,7 @@
 
 (defn make-vm [init text]
   {:mode :interpret
-   :dstack (stack/make-stack)
+   :dstack (stack/make-stack 65536)
    :cstack ()
    :dict (:dict init)
    :cells (:cells init)
